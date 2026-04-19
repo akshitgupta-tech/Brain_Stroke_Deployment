@@ -28,9 +28,24 @@ COLORS   = {0: "#2ecc71",        1: "#e74c3c"}
 
 @st.cache_resource(show_spinner="Loading model …")
 def load_model(model_path: str):
-    """Load a Keras .h5 model (cached so it's only loaded once)."""
+    """
+    Load a Keras .h5 model with backwards-compatibility fix for models saved
+    with older TensorFlow versions that used 'batch_shape' instead of 'shape'
+    in the InputLayer config.
+    """
     import tensorflow as tf
-    return tf.keras.models.load_model(model_path)
+    import h5py
+
+    # Patch 'batch_shape' → 'shape' inside the H5 model config
+    with h5py.File(model_path, 'r+') as f:
+        model_config = f.attrs.get('model_config')
+        if isinstance(model_config, bytes):
+            model_config = model_config.decode('utf-8')
+        if model_config and 'batch_shape' in model_config:
+            patched = model_config.replace('"batch_shape"', '"shape"')
+            f.attrs['model_config'] = patched.encode('utf-8')
+
+    return tf.keras.models.load_model(model_path, compile=False)
 
 
 def preprocess(image: Image.Image) -> np.ndarray:
@@ -44,7 +59,7 @@ def preprocess(image: Image.Image) -> np.ndarray:
 
 
 def predict(model, image: Image.Image):
-    """Return (label_idx, confidence)."""
+    """Return (label_idx, confidence, raw_prob)."""
     x    = preprocess(image)
     prob = float(model.predict(x, verbose=0)[0][0])
     idx  = int(prob >= 0.5)
@@ -62,9 +77,6 @@ st.markdown(
 st.divider()
 
 # ── Auto-load model ───────────────────────────────────────────────────────────
-# Place your trained .h5 file next to app.py and set MODEL_PATH below.
-# The app searches for it automatically on startup — no manual upload needed.
-
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "model.h5")
 
 model = None
