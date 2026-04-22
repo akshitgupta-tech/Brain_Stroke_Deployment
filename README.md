@@ -6,8 +6,6 @@ A deep learning web app that detects **facial paralysis caused by stroke** from 
 ![TensorFlow](https://img.shields.io/badge/TensorFlow-2.21.0-orange?logo=tensorflow)
 ![Keras](https://img.shields.io/badge/Keras-3.12.1-red?logo=keras)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.40%2B-red?logo=streamlit)
-![License](https://img.shields.io/badge/License-MIT-green)
-
 ---
 
 ## 🖥️ Live Demo
