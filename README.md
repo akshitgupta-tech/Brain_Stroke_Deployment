@@ -2,17 +2,16 @@
 
 A deep learning web app that detects **facial paralysis caused by stroke** from a face image, built with ResNet50 and deployed via Streamlit.
 
-![Python](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python)
-![TensorFlow](https://img.shields.io/badge/TensorFlow-2.13%2B-orange?logo=tensorflow)
-![Streamlit](https://img.shields.io/badge/Streamlit-1.35%2B-red?logo=streamlit)
+![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)
+![TensorFlow](https://img.shields.io/badge/TensorFlow-2.15-orange?logo=tensorflow)
+![Streamlit](https://img.shields.io/badge/Streamlit-1.35-red?logo=streamlit)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 ---
 
 ## 🖥️ Live Demo
 
-> 🔗 [Click here to open the app](https://YOUR_USERNAME-brain-stroke-deployment-app-xxxx.streamlit.app)  
-> *(Replace with your actual Streamlit URL after deployment)*
+🔗 [brainstrokedeployment-8xw9ujbq7ziz4qoekkapnn.streamlit.app](https://brainstrokedeployment-8xw9ujbq7ziz4qoekkapnn.streamlit.app)
 
 ---
 
@@ -46,7 +45,7 @@ The model was trained with class balancing (oversampling), real-time augmentatio
 ```
 Brain_Stroke_Deployment/
 ├── app.py               # Streamlit application
-├── model.h5             # Trained ResNet50 weights (Git LFS)
+├── model.keras          # Trained ResNet50 model (Keras format)
 ├── requirements.txt     # Runtime dependencies
 └── README.md            # This file
 ```
@@ -57,7 +56,7 @@ Brain_Stroke_Deployment/
 
 **1. Clone the repo**
 ```bash
-git clone https://github.com/YOUR_USERNAME/Brain_Stroke_Deployment.git
+git clone https://github.com/akshitgupta-tech/Brain_Stroke_Deployment.git
 cd Brain_Stroke_Deployment
 ```
 
@@ -87,7 +86,7 @@ Open [http://localhost:8501](http://localhost:8501) in your browser.
 | Package | Purpose |
 |---|---|
 | `streamlit` | Web interface |
-| `tensorflow` | ResNet50 model & inference |
+| `tensorflow-cpu` | ResNet50 model & inference |
 | `opencv-python-headless` | Image loading & preprocessing |
 | `Pillow` | Image handling |
 | `numpy` | Array operations |
@@ -97,7 +96,7 @@ Open [http://localhost:8501](http://localhost:8501) in your browser.
 
 ## 🗂️ Training
 
-The model was trained separately using `train.py`. Training details:
+The model was trained separately using `resnet50_train.py`. Training details:
 
 - **Dataset:** Stroke / Non-Stroke facial images
 - **Augmentation:** Horizontal flip, rotation (±10°), zoom (0.9–1.1×)

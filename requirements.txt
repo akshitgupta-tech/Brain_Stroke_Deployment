@@ -4,4 +4,3 @@ opencv-python-headless
 Pillow
 numpy
 pandas
-h5py
