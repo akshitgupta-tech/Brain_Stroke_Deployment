@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Streamlit App — Facial Paralysis Detection (ResNet50)
+Streamlit App -- Facial Paralysis Detection (ResNet50)
 Loads model.keras directly from the repo. No upload needed.
 """
 
@@ -10,24 +10,24 @@ import cv2
 import streamlit as st
 from PIL import Image
 
-# ── Page config ───────────────────────────────────────────────────────────────
+# -- Page config ---------------------------------------------------------------
 st.set_page_config(
     page_title="Facial Paralysis Detector",
     page_icon="🧠",
     layout="centered",
 )
 
-# ── Constants ─────────────────────────────────────────────────────────────────
+# -- Constants -----------------------------------------------------------------
 IMG_SIZE = 224
-LABELS   = {0: "Non-Stroke  ✅", 1: "Stroke  ⚠️"}
-COLORS   = {0: "#2ecc71",        1: "#e74c3c"}
+LABELS   = {0: "Non-Stroke", 1: "Stroke"}
+COLORS   = {0: "#2ecc71",    1: "#e74c3c"}
 
-# ── Model loading ─────────────────────────────────────────────────────────────
+# -- Model loading -------------------------------------------------------------
 
-@st.cache_resource(show_spinner="Loading model …")
+@st.cache_resource(show_spinner="Loading model ...")
 def load_model(model_path: str):
     import tensorflow as tf
-    return tf.keras.models.load_model(model_path)   # .keras has zero compat issues
+    return tf.keras.models.load_model(model_path)
 
 
 def preprocess(image: Image.Image) -> np.ndarray:
@@ -46,12 +46,12 @@ def predict(model, image: Image.Image):
     return idx, conf, prob
 
 
-# ── UI ────────────────────────────────────────────────────────────────────────
-st.title("🧠 Facial Paralysis Detection")
+# -- UI ------------------------------------------------------------------------
+st.title("Facial Paralysis Detection")
 st.markdown("Upload a face image to classify it as **Stroke** or **Non-Stroke**.")
 st.divider()
 
-# ── Auto-load model from repo ─────────────────────────────────────────────────
+# -- Auto-load model from repo -------------------------------------------------
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "model.keras")
 
 model = None
@@ -67,44 +67,44 @@ else:
         "Run `convert_model.py` locally and push `model.keras` to GitHub."
     )
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
+# -- Sidebar -------------------------------------------------------------------
 with st.sidebar:
-    st.header("⚙️ Model Status")
+    st.header("Model Status")
     if model is not None:
-        st.success("Model loaded ✔")
+        st.success("Model loaded")
         st.caption(f"Input shape: {model.input_shape}")
     else:
         st.error("No model loaded")
 
     st.divider()
-    st.header("ℹ️ About")
+    st.header("About")
     st.markdown(
         """
         **Architecture:** ResNet50 (ImageNet pretrained)  
-        **Classes:** Non-Stroke · Stroke  
-        **Input:** 224 × 224 RGB  
+        **Classes:** Non-Stroke / Stroke  
+        **Input:** 224 x 224 RGB  
         **Preprocessing:** ResNet50 ImageNet normalisation
         """
     )
 
-# ── Main panel ────────────────────────────────────────────────────────────────
+# -- Main panel ----------------------------------------------------------------
 col_upload, col_result = st.columns([1, 1], gap="large")
 
 with col_upload:
-    st.subheader("📤 Upload Image")
+    st.subheader("Upload Image")
     uploaded = st.file_uploader("Choose a face image", type=["jpg", "jpeg", "png"])
     if uploaded:
         img = Image.open(uploaded)
         st.image(img, caption="Uploaded image", use_container_width=True)
 
 with col_result:
-    st.subheader("🔍 Prediction")
+    st.subheader("Prediction")
     if not uploaded:
         st.info("Upload an image to get started.")
     elif model is None:
         st.warning("Model not loaded.")
     else:
-        with st.spinner("Running inference …"):
+        with st.spinner("Running inference ..."):
             label_idx, confidence, raw_prob = predict(model, img)
 
         label = LABELS[label_idx]
@@ -137,38 +137,3 @@ with col_result:
                 "predicted_class":        "Stroke" if label_idx == 1 else "Non-Stroke",
                 "threshold":              0.5,
             })
-
-# ── Batch mode ────────────────────────────────────────────────────────────────
-st.divider()
-st.subheader("📂 Batch Prediction")
-
-batch_files = st.file_uploader(
-    "Upload multiple images", type=["jpg", "jpeg", "png"],
-    accept_multiple_files=True, key="batch"
-)
-
-if batch_files:
-    if model is None:
-        st.warning("Model not loaded.")
-    else:
-        import pandas as pd
-        results = []
-        prog = st.progress(0, text="Processing …")
-
-        for i, f in enumerate(batch_files):
-            pil = Image.open(f)
-            idx, conf, prob = predict(model, pil)
-            results.append({
-                "Filename":    f.name,
-                "Prediction":  "Stroke" if idx == 1 else "Non-Stroke",
-                "Confidence":  f"{conf * 100:.1f}%",
-                "Stroke Prob": round(prob, 4),
-            })
-            prog.progress((i + 1) / len(batch_files), text=f"Processing {f.name} …")
-
-        prog.empty()
-        df = pd.DataFrame(results)
-        st.dataframe(df, use_container_width=True)
-
-        csv = df.to_csv(index=False).encode()
-        st.download_button("⬇️ Download results CSV", csv, "predictions.csv", "text/csv")
