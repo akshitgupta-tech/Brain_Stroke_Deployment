@@ -14,101 +14,119 @@ A deep learning web app that detects **facial paralysis caused by stroke** from 
 
 ---
 
-## 🔍 What It Does
+# Facial Paralysis Detection via Cross-Modal Attention and Asymmetry-Aware Learning
 
-- Upload a **face photograph**
-- The app runs it through a fine-tuned **ResNet50** model
-- Outputs: **Stroke ⚠️** or **Non-Stroke ✅** with confidence score and raw probability
-- Supports **batch prediction** — upload many images at once and export results as CSV
+> A hybrid MobileNetV3-Small and GCNN framework for automated facial paralysis detection — submitted as part of PCS 220 Multimedia Processing, TIET Patiala (2025).
 
 ---
 
-## 🧠 Model
+## Overview
 
-| Detail | Value |
+Facial paralysis is a critical early indicator of acute stroke. This project presents a hybrid deep learning framework that combines **MobileNetV3-Small** (for visual feature extraction) with a **Graph Convolutional Neural Network (GCNN)** (for geometric/structural analysis of facial landmarks), fused via a **cross-modal attention mechanism**.
+
+The model simultaneously classifies facial paralysis (stroke vs. non-stroke) and estimates the degree of facial asymmetry through multi-task learning.
+
+---
+
+## Key Features
+
+- **Dual-branch architecture** — MobileNetV3-Small handles appearance; GCNN handles landmark geometry
+- **Cross-modal attention** — dynamically fuses visual and structural features
+- **Asymmetry-aware loss** — gives higher weight to clinically significant asymmetric cases
+- **Attention-based graph pooling** — focuses on the most diagnostically relevant facial nodes
+- **5-fold cross-validation** — ensures robust, generalizable evaluation
+
+---
+
+## Architecture
+
+```
+Input Image
+    │
+    ├── Landmark Detection (dlib, 68 keypoints)
+    │       └── Graph Construction G=(V,E)
+    │               └── GCN Branch → Graph Feature Vector (256-d)
+    │
+    └── Image Tensor (224×224)
+            └── MobileNetV3-Small + CBAM → Image Feature Vector (256-d)
+                        │
+                Cross-Modal Attention Layer
+                        │
+                Classification Head  +  Asymmetry Regression Head
+                        │
+                    Output (Stroke / No Stroke)
+```
+
+---
+
+## Dataset
+
+**FIASNAS** — 3,749 facial images covering both stroke and non-stroke cases, with variability in lighting, orientation, expression, and background.
+
+| Split | Size |
 |---|---|
-| Architecture | ResNet50 (ImageNet pretrained) |
-| Training strategy | 2-phase: Transfer Learning → Fine-tuning |
-| Validation | 5-Fold Stratified Cross-Validation |
-| Input size | 224 × 224 RGB |
-| Preprocessing | `keras.applications.resnet50.preprocess_input` |
-| Classes | Non-Stroke (0) · Stroke (1) |
-| Output | Sigmoid probability |
-| Model format | `.keras` (Keras 3 native format) |
-
-The model was trained with class balancing (oversampling), real-time augmentation (flips, rotations, zoom), and class-weighted loss to handle dataset imbalance.
+| Train + Validation | 90% |
+| Hold-out Test | 10% |
 
 ---
 
-## 📁 Project Structure
+## Results
 
-```
-Brain_Stroke_Deployment/
-├── app.py               # Streamlit application
-├── model.keras          # Trained ResNet50 model (Keras 3 format)
-├── requirements.txt     # Runtime dependencies
-└── README.md            # This file
-```
-
----
-
-## 🚀 Run Locally
-
-**1. Clone the repo**
-```bash
-git clone https://github.com/akshitgupta-tech/Brain_Stroke_Deployment.git
-cd Brain_Stroke_Deployment
-```
-
-**2. Create a virtual environment**
-```bash
-python -m venv .venv
-.venv\Scripts\activate        # Windows
-# source .venv/bin/activate   # macOS / Linux
-```
-
-**3. Install dependencies**
-```bash
-pip install -r requirements.txt
-```
-
-**4. Run the app**
-```bash
-streamlit run app.py
-```
-
-Open [http://localhost:8501](http://localhost:8501) in your browser.
+| Model | Accuracy | Precision | Recall | F1-Score |
+|---|---|---|---|---|
+| CNN (baseline) | 0.6741 ± 0.0104 | 0.5568 ± 0.1544 | 0.6741 ± 0.0104 | 0.5537 ± 0.0290 |
+| GCN (standalone) | 0.6691 ± 0.0246 | 0.4611 ± 0.2407 | 0.3196 ± 0.2722 | 0.3266 ± 0.2089 |
+| MobileNetV3-Small | 0.9692 ± 0.0226 | 0.9206 ± 0.0526 | 0.9973 ± 0.0022 | 0.9566 ± 0.0298 |
+| **Proposed (Hybrid)** | **0.9899 ± 0.0203** | **1.0000 ± 0.0000** | **0.9696 ± 0.0608** | **0.9835 ± 0.0329** |
 
 ---
 
-## 📦 Dependencies
+## Hyperparameters
 
-| Package | Version | Purpose |
-|---|---|---|
-| `streamlit` | >=1.40.0 | Web interface |
-| `tensorflow` | 2.21.0 | Model backend |
-| `keras` | 3.12.1 | ResNet50 & inference |
-| `opencv-python-headless` | latest | Image preprocessing |
-| `Pillow` | latest | Image handling |
-| `numpy` | latest | Array operations |
-| `pandas` | latest | Batch results & CSV export |
-
----
-
-## 🗂️ Training
-
-The model was trained separately using `resnet50_train.py`. Training details:
-
-- **Dataset:** Stroke / Non-Stroke facial images
-- **Augmentation:** Horizontal flip, rotation (±10°), zoom (0.9–1.1×)
-- **Phase 1:** Frozen ResNet50 backbone, 15 epochs, LR = 1e-4
-- **Phase 2:** Top 30 layers unfrozen, 20 epochs, LR = 1e-5
-- **Early stopping** with best-weight restoration
-- **Best fold model** saved and converted to `.keras` format for deployment
+| Parameter | Value |
+|---|---|
+| Image Size | 224 × 224 |
+| Batch Size | 16 |
+| K-Folds | 5 |
+| Dropout Rate | 0.3 |
+| Hidden Dimension | 128 |
+| Output Dimension | 256 |
+| Optimizer | AdamW |
+| Learning Rate | 0.001 |
+| Epochs | 20 |
 
 ---
 
-## ⚠️ Disclaimer
+## Methodology
 
-This tool is intended for **research and educational purposes only**. It is **not a medical device** and should not be used for clinical diagnosis. Always consult a qualified medical professional for any health concerns.
+### Preprocessing
+1. Face detection and background removal
+2. Crop and resize to 224×224
+3. CLAHE contrast enhancement
+4. Eye-line alignment (corrects head tilt)
+5. Pixel normalization
+
+### MobileNetV3-Small Branch
+- 13-layer backbone with Inverted Residual Blocks (IRB)
+- CBAM (Convolutional Block Attention Module) applied after each block group
+- Global Average Pooling → FC layers with Hardswish activation → 256-d embedding
+
+### GCN Branch
+- 68 facial landmarks extracted via **dlib**
+- Graph G=(V,E): landmarks as nodes, anatomical connections as edges
+- 2-layer GCN with BatchNorm, ReLU, Dropout (p=0.3)
+- Attention-based graph pooling (2-layer MLP scoring per node) → 256-d graph embedding
+
+### Fusion
+- Cross-modal attention: image features as Query, graph features as Key & Value
+- Attended features added back to image features (residual)
+- Fused representation fed to classification + regression heads
+
+### Training
+- **Classification loss:** Binary Cross-Entropy (BCE)
+- **Regression loss:** Mean Squared Error (MSE)
+- **Total loss:** L_total = L_cls + λ·L_reg
+- Optimizer: AdamW with early stopping; best model per fold saved
+
+---
 
